@@ -167,14 +167,6 @@ async def generate_tryon(payload: TryOnPayload):
                 break
                 
         if generated_image_data:
-            # filename = f"{uuid.uuid4()}.png"
-            # file_path = os.path.join(IMAGE_DIR, filename)
-            # with open(file_path, "wb") as f:
-            #     f.write(generated_image_data)
-            # print(f"Image successfully saved to: {file_path}")
-
-            # image_url = f"http://127.0.0.1:8000/images/{filename}"
-            # return {"imageUrl": image_url}
             return Response(content=generated_image_data, media_type="image/png")
         else:
             block_reason = response.prompt_feedback.block_reason if response.prompt_feedback else "Unknown"

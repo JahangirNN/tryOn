@@ -1,14 +1,18 @@
 const imageData = { person: null, product: null };
-// Ensure this URL is correct and points to your Render deployment
+// IMPORTANT: Make sure this URL points to your deployed Render backend
 const API_BASE_URL = "https://tryon-3zcg.onrender.com";
 
+/**
+ * Main function to submit the try-on request.
+ * This version is designed to handle a direct image/blob response from the backend.
+ */
 async function submitTryOn() {
   if (!imageData.person || !imageData.product) {
     alert("Please provide both a person and a product image!");
     return;
   }
   
-  // CORRECTED PAYLOAD: Now collects all fields from the updated HTML
+  // This payload matches your backend's Pydantic model exactly
   const payload = {
     personImage: imageData.person,
     productImage: imageData.product,
@@ -27,17 +31,22 @@ async function submitTryOn() {
       body: JSON.stringify(payload)
     });
 
+    // Handle server errors (like 500, 422, etc.)
     if (!res.ok) {
         const errorData = await res.json().catch(() => ({ detail: "An unknown server error occurred." }));
         throw new Error(errorData.detail || `Server error: ${res.status}`);
     }
 
+    // --- THIS IS THE KEY CHANGE ---
+    // Instead of parsing JSON, we now get the raw image data as a blob.
     const imageBlob = await res.blob();
+
     if (imageBlob.size > 0) {
+      // Create a temporary URL from the blob data that the <img> tag can display
       const imageUrl = URL.createObjectURL(imageBlob);
       document.getElementById("resultImage").src = imageUrl;
 
-      // Show and enable the download button on success
+      // Show and enable the download button now that we have a valid image
       const downloadBtn = document.getElementById('downloadBtn');
       downloadBtn.style.display = 'flex';
       downloadBtn.disabled = false;
@@ -53,6 +62,10 @@ async function submitTryOn() {
   }
 }
 
+/**
+ * Sets up the event listener for the download button.
+ * This works perfectly with the blob URL created in submitTryOn.
+ */
 function setupDownloadButton() {
     const downloadBtn = document.getElementById('downloadBtn');
     const resultImage = document.getElementById('resultImage');
@@ -63,21 +76,23 @@ function setupDownloadButton() {
             alert("No image to download yet!");
             return;
         }
+        
+        // Create a temporary link to trigger the browser's download functionality
         const link = document.createElement('a');
         link.href = imageUrl;
-        link.download = 'virtual-try-on-result.png';
+        link.download = 'virtual-try-on-result.png'; // Sets the default filename
         document.body.appendChild(link);
         link.click();
-        document.body.removeChild(link);
+        document.body.removeChild(link); // Clean up the temporary link
     });
 }
+
+// --- Lifecycle and Helper Functions (No changes needed below this line) ---
 
 document.addEventListener('DOMContentLoaded', () => {
   setupImageInputs();
   setupDownloadButton();
 });
-
-// --- Helper Functions ---
 
 async function urlToBase64(url) {
   try {
