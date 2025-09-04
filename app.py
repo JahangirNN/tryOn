@@ -98,7 +98,17 @@ async def proxy_image(url: str):
 #     except Exception as e:
 #         raise HTTPException(status_code=500, detail=f"Could not retrieve gallery: {e}")
 
-@app.post("/generate", response_model=TryOnResponse)
+@app.post("/generate",
+    # Use response_class for direct Response objects like images
+    response_class=Response,
+    # Add OpenAPI documentation for what this endpoint returns
+    responses={
+        200: {
+            "content": {"image/png": {}},
+            "description": "The generated try-on image in PNG format."
+        }
+    }
+)
 async def generate_tryon(payload: TryOnPayload):
     try:
         person_image = Image.open(BytesIO(base64.b64decode(payload.personImage)))

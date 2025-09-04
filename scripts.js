@@ -1,3 +1,5 @@
+// Corrected scripts.js
+
 const imageData = { person: null, product: null };
 // IMPORTANT: Make sure this URL points to your deployed Render backend
 const API_BASE_URL = "https://tryon-3zcg.onrender.com";
@@ -90,6 +92,9 @@ function setupDownloadButton() {
 // --- Lifecycle and Helper Functions (No changes needed below this line) ---
 
 document.addEventListener('DOMContentLoaded', () => {
+  // ✅✅✅ FIX: ADD THE CLICK LISTENER TO THE SUBMIT BUTTON ✅✅✅
+  document.getElementById('submitBtn').addEventListener('click', submitTryOn);
+  
   setupImageInputs();
   setupDownloadButton();
 });
