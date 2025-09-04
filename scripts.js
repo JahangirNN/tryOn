@@ -1,5 +1,3 @@
-// Corrected scripts.js
-
 const imageData = { person: null, product: null };
 // IMPORTANT: Make sure this URL points to your deployed Render backend
 const API_BASE_URL = "https://tryon-3zcg.onrender.com";
@@ -39,16 +37,12 @@ async function submitTryOn() {
         throw new Error(errorData.detail || `Server error: ${res.status}`);
     }
 
-    // --- THIS IS THE KEY CHANGE ---
-    // Instead of parsing JSON, we now get the raw image data as a blob.
     const imageBlob = await res.blob();
 
     if (imageBlob.size > 0) {
-      // Create a temporary URL from the blob data that the <img> tag can display
       const imageUrl = URL.createObjectURL(imageBlob);
       document.getElementById("resultImage").src = imageUrl;
 
-      // Show and enable the download button now that we have a valid image
       const downloadBtn = document.getElementById('downloadBtn');
       downloadBtn.style.display = 'flex';
       downloadBtn.disabled = false;
@@ -66,7 +60,6 @@ async function submitTryOn() {
 
 /**
  * Sets up the event listener for the download button.
- * This works perfectly with the blob URL created in submitTryOn.
  */
 function setupDownloadButton() {
     const downloadBtn = document.getElementById('downloadBtn');
@@ -79,22 +72,19 @@ function setupDownloadButton() {
             return;
         }
         
-        // Create a temporary link to trigger the browser's download functionality
         const link = document.createElement('a');
         link.href = imageUrl;
-        link.download = 'virtual-try-on-result.png'; // Sets the default filename
+        link.download = 'virtual-try-on-result.png';
         document.body.appendChild(link);
         link.click();
-        document.body.removeChild(link); // Clean up the temporary link
+        document.body.removeChild(link);
     });
 }
 
-// --- Lifecycle and Helper Functions (No changes needed below this line) ---
+// --- Lifecycle and Helper Functions ---
 
 document.addEventListener('DOMContentLoaded', () => {
-  // ✅✅✅ FIX: ADD THE CLICK LISTENER TO THE SUBMIT BUTTON ✅✅✅
   document.getElementById('submitBtn').addEventListener('click', submitTryOn);
-  
   setupImageInputs();
   setupDownloadButton();
 });
@@ -145,20 +135,29 @@ function setupImageInputs() {
       }
     });
 
-    urlInput.addEventListener('blur', async () => {
-      const url = urlInput.value.trim();
-      if (url) {
-        preview.innerHTML = `<span>Loading...</span>`;
-        const base64 = await urlToBase64(url);
-        if (base64) {
-          imageData[inputId] = base64;
-          preview.innerHTML = `<img src="${url}" alt="Preview">`;
-        } else {
-          preview.innerHTML = `<span>Failed to load. Is it a direct link?</span>`;
-          imageData[inputId] = null;
+    // ✅✅✅ THE ONLY CHANGE IS HERE ✅✅✅
+    let debounceTimer; // Timer for debouncing
+    urlInput.addEventListener('input', () => {
+      clearTimeout(debounceTimer); // Reset the timer on each input event
+
+      // Set a new timer to run the function after 500ms of inactivity
+      debounceTimer = setTimeout(async () => {
+        const url = urlInput.value.trim();
+        if (url) {
+          preview.innerHTML = `<span>Loading...</span>`;
+          const base64 = await urlToBase64(url);
+          if (base64) {
+            imageData[inputId] = base64;
+            // Use the original URL for the preview for faster loading and better quality
+            preview.innerHTML = `<img src="${url}" alt="Preview">`;
+          } else {
+            preview.innerHTML = `<span>Failed to load. Is it a direct link?</span>`;
+            imageData[inputId] = null;
+          }
         }
-      }
+      }, 500); // 500ms delay
     });
+    // ✅✅✅ END OF CHANGE ✅✅✅
 
     container.querySelectorAll('.tab').forEach(tab => {
       tab.addEventListener('click', () => {
