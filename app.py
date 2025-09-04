@@ -125,14 +125,15 @@ async def generate_tryon(payload: TryOnPayload):
         try:
   
   
-            meta_prompt = meta_prompt_1_production_ready
+            # meta_prompt = meta_prompt_1_production_ready
+            meta_prompt = meta_prompt_test_for_better
 
 
 
             # Call the description model to generate the entire new prompt.
             description_response = description_model.generate_content(
                 [meta_prompt, person_image, product_image],
-                generation_config={"temperature": 0.5} # Temp allows for creative descriptions of fabric physics
+                generation_config={"temperature": 0.2} # Temp allows for creative descriptions of fabric physics
             )
             ai_generated_dynamic_prompt = description_response.text.strip()
             print("\n--- AI as Master Prompt Engineer Generated the Following ---")
