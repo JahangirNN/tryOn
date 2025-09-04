@@ -1,4 +1,5 @@
 const imageData = { person: null, product: null };
+// Ensure this URL is correct and the deployment is active
 const API_BASE_URL = "https://try-on-ai-rho.vercel.app";
 
 async function submitTryOn() {
@@ -24,7 +25,7 @@ async function submitTryOn() {
     });
 
     if (!res.ok) {
-        // Try to parse the error response from the server for more detail
+        // Try to get a specific error message from the server if available
         const errorData = await res.json().catch(() => ({ detail: "An unknown server error occurred." }));
         throw new Error(errorData.detail || `Server error: ${res.status}`);
     }
@@ -39,6 +40,7 @@ async function submitTryOn() {
 
   } catch (error) {
     console.error("Error during generation:", error);
+    // This custom function gives you the helpful alert you saw
     handleFetchError(error, "generating the image");
   } finally {
     toggleLoading(false);
@@ -50,6 +52,17 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // --- Helper Functions ---
+
+function handleFetchError(error, action) {
+    let alertMessage = `An error occurred while ${action}.\n\nReason: ${error.message}\n\n`;
+    if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+        alertMessage += 'This is often a CORS issue or a server timeout on the free Vercel plan.\n\n';
+        alertMessage += 'Debugging Steps:\n';
+        alertMessage += '1. Go to your Vercel dashboard and check the "Logs" for your deployment. Look for a "TASK_TIMED_OUT" error.\n';
+        alertMessage += '2. Open the Developer Console (F12) and check the "Network" tab for more details on the failed request.\n';
+    }
+    alert(alertMessage);
+}
 
 async function urlToBase64(url) {
   try {
@@ -72,18 +85,6 @@ async function urlToBase64(url) {
       handleFetchError(error, "loading the image from the URL");
       return null;
   }
-}
-
-function handleFetchError(error, action) {
-    let alertMessage = `An error occurred while ${action}.\n\nReason: ${error.message}\n\n`;
-    if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
-        alertMessage += 'This is often a CORS issue or a network problem.\n\n';
-        alertMessage += 'Debugging Steps:\n';
-        alertMessage += '1. Open the Developer Console (F12) and check the "Console" and "Network" tabs for specific errors.\n';
-        alertMessage += '2. Check your Vercel deployment logs for server-side errors or timeouts.\n';
-        alertMessage += '3. Ensure the backend is running and accessible at the specified URL.';
-    }
-    alert(alertMessage);
 }
 
 function fileToBase64(file) {
@@ -117,7 +118,7 @@ function setupImageInputs() {
           imageData[inputId] = base64;
           preview.innerHTML = `<img src="${url}" alt="Preview">`;
         } else {
-          preview.innerHTML = `<span>Failed to load. Please check the URL and console for errors.</span>`;
+          preview.innerHTML = `<span>Failed to load. Check console for errors.</span>`;
           imageData[inputId] = null;
         }
       }
