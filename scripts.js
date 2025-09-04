@@ -1,6 +1,6 @@
 const imageData = { person: null, product: null };
 // Ensure this URL is correct and the deployment is active
-const API_BASE_URL = "https://try-on-ai-rho.vercel.app";
+const API_BASE_URL = "https://tryon-3zcg.onrender.com";
 
 async function submitTryOn() {
   if (!imageData.person || !imageData.product) {
