@@ -1,5 +1,5 @@
 const imageData = { person: null, product: null };
-const API_BASE_URL = "https://try-on-ai-rho.vercel.app/";
+const API_BASE_URL = "https://try-on-ai-rho.vercel.app";
 
 async function submitTryOn() {
   if (!imageData.person || !imageData.product) {
