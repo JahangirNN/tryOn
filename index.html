@@ -3,77 +3,82 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AI Virtual Try-On (Robust URL Loading)</title>
+  <title>AI Virtual Try-On Studio</title>
+  <!-- Link to Font Awesome for Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
+  <header class="main-header">
+    <h1>AI Virtual Try-On Studio</h1>
+    <p>Visualize fashion on any model, instantly.</p>
+  </header>
+
   <div class="main-container">
+    <!-- CONTROLS PANEL -->
     <div class="panel controls-panel">
-      <h1>AI Virtual Try-On</h1>
-      <div class="input-group image-input" data-input-id="person">
-        <label>1. Person Image</label>
-        <div class="tabs">
-          <div class="tab active" data-tab="file">Upload</div>
-          <div class="tab" data-tab="url">URL</div>
+      <div class="control-section">
+        <h2><i class="fa-solid fa-user-check"></i> 1. Person Image</h2>
+        <div class="image-input" data-input-id="person">
+          <div class="tabs">
+            <div class="tab active" data-tab="file">Upload</div>
+            <div class="tab" data-tab="url">URL</div>
+          </div>
+          <div class="tab-content active" data-tab-content="file">
+            <input type="file" class="file-input" accept="image/*">
+          </div>
+          <div class="tab-content" data-tab-content="url">
+            <input type="text" class="url-input" placeholder="Paste direct image URL (.jpg, .png)">
+          </div>
+          <div class="image-preview"><span>Preview</span></div>
         </div>
-        <div class="tab-content active" data-tab-content="file">
-          <input type="file" class="file-input" accept="image/*">
-        </div>
-        <div class="tab-content" data-tab-content="url">
-          <input type="text" class="url-input" placeholder="Paste DIRECT image URL (ends in .jpg, .png)">
-        </div>
-        <div class="image-preview"><span>Preview</span></div>
       </div>
-      <div class="input-group image-input" data-input-id="product">
-        <label>2. Product Image</label>
-        <div class="tabs">
-          <div class="tab active" data-tab="file">Upload</div>
-          <div class="tab" data-tab="url">URL</div>
+
+      <div class="control-section">
+        <h2><i class="fa-solid fa-shirt"></i> 2. Product Image</h2>
+        <div class="image-input" data-input-id="product">
+          <div class="tabs">
+            <div class="tab active" data-tab="file">Upload</div>
+            <div class="tab" data-tab="url">URL</div>
+          </div>
+          <div class="tab-content active" data-tab-content="file">
+            <input type="file" class="file-input" accept="image/*">
+          </div>
+          <div class="tab-content" data-tab-content="url">
+            <input type="text" class="url-input" placeholder="Paste direct image URL (.jpg, .png)">
+          </div>
+          <div class="image-preview"><span>Preview</span></div>
         </div>
-        <div class="tab-content active" data-tab-content="file">
-          <input type="file" class="file-input" accept="image/*">
+      </div>
+
+      <div class="control-section">
+        <h2><i class="fa-solid fa-pen-to-square"></i> 3. Details</h2>
+        <div class="input-group">
+          <input type="text" id="productName" placeholder="Product Name (e.g., Graphic T-Shirt)">
+          <textarea id="productDesc" placeholder="Description (e.g., 100% cotton, black with a logo)"></textarea>
         </div>
-        <div class="tab-content" data-tab-content="url">
-          <input type="text" class="url-input" placeholder="Paste DIRECT image URL (ends in .jpg, .png)">
-        </div>
-        <div class="image-preview"><span>Preview</span></div>
       </div>
-      <div class="input-group">
-        <label>3. Product Details</label>
-        <input type="text" id="productName" placeholder="e.g., Men's Graphic T-Shirt">
-        <input type="text" id="productSize" placeholder="e.g., Medium">
-        <textarea id="productDesc" placeholder="e.g., 100% cotton, black with a white logo on the front."></textarea>
-      </div>
-      <div class="input-group">
-        <label>4. Style Options (Optional)</label>
-        <select id="tone">
-          <option value="">-- Select Tone --</option>
-          <option value="casual">Casual</option>
-          <option value="sporty">Sporty</option>
-          <option value="elegant">Elegant</option>
-        </select>
-        <select id="style" style="margin-top: 8px;">
-          <option value="">-- Select Style --</option>
-          <option value="photorealistic">Photorealistic</option>
-          <option value="fashion catalog">Fashion Catalog</option>
-          <option value="cinematic">Cinematic</option>
-        </select>
-      </div>
-      <button id="submitBtn" onclick="submitTryOn()">
-        <span id="btn-text">Generate Try-On</span>
+      
+      <button id="submitBtn">
+        <span id="btn-text"><i class="fa-solid fa-wand-magic-sparkles"></i> Generate Try-On</span>
         <div id="btn-spinner" class="spinner" style="display: none; width: 20px; height: 20px;"></div>
       </button>
     </div>
+
+    <!-- RESULTS PANEL -->
     <div class="panel results-panel">
       <h2>Result</h2>
       <div id="result-wrapper">
-        <img id="resultImage" src="https://via.placeholder.com/512x512.png?text=Your+Result+Will+Appear+Here" alt="Result will appear here">
+        <img id="resultImage" src="https://via.placeholder.com/512x512.png?text=Your+Result+Appears+Here" alt="Result will appear here">
         <div class="loader" id="resultLoader">
           <div class="spinner"></div>
           <p>Generating your image...</p>
         </div>
       </div>
+      <button id="downloadBtn" style="display: none;">
+        <i class="fa-solid fa-download"></i> Download Image
+      </button>
     </div>
   </div>
 

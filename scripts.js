@@ -11,10 +11,7 @@ async function submitTryOn() {
     personImage: imageData.person,
     productImage: imageData.product,
     productName: document.getElementById("productName").value,
-    productSize: document.getElementById("productSize").value,
     productDesc: document.getElementById("productDesc").value,
-    tone: document.getElementById("tone").value,
-    style: document.getElementById("style").value
   };
   toggleLoading(true);
   try {
@@ -25,7 +22,6 @@ async function submitTryOn() {
     });
 
     if (!res.ok) {
-        // Try to get a specific error message from the server if available
         const errorData = await res.json().catch(() => ({ detail: "An unknown server error occurred." }));
         throw new Error(errorData.detail || `Server error: ${res.status}`);
     }
@@ -34,35 +30,50 @@ async function submitTryOn() {
     if (imageBlob.size > 0) {
       const imageUrl = URL.createObjectURL(imageBlob);
       document.getElementById("resultImage").src = imageUrl;
+      // Show and enable the download button on success
+      const downloadBtn = document.getElementById('downloadBtn');
+      downloadBtn.style.display = 'flex';
+      downloadBtn.disabled = false;
     } else {
       throw new Error("API did not return a valid image.");
     }
 
   } catch (error) {
     console.error("Error during generation:", error);
-    // This custom function gives you the helpful alert you saw
-    handleFetchError(error, "generating the image");
+    alert(`Error: ${error.message}`);
   } finally {
     toggleLoading(false);
   }
 }
 
+function setupDownloadButton() {
+    const downloadBtn = document.getElementById('downloadBtn');
+    const resultImage = document.getElementById('resultImage');
+
+    downloadBtn.addEventListener('click', () => {
+        // The src is a blob URL, which is perfect for downloading
+        const imageUrl = resultImage.src;
+        if (!imageUrl || imageUrl.startsWith('https://via.placeholder.com')) {
+            alert("No image to download yet!");
+            return;
+        }
+
+        const link = document.createElement('a');
+        link.href = imageUrl;
+        link.download = 'virtual-try-on-result.png'; // Sets the filename for the download
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link); // Clean up the temporary link
+    });
+}
+
+
 document.addEventListener('DOMContentLoaded', () => {
   setupImageInputs();
+  setupDownloadButton(); // Initialize the download button listener
 });
 
 // --- Helper Functions ---
-
-function handleFetchError(error, action) {
-    let alertMessage = `An error occurred while ${action}.\n\nReason: ${error.message}\n\n`;
-    if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
-        alertMessage += 'This is often a CORS issue or a server timeout on the free Vercel plan.\n\n';
-        alertMessage += 'Debugging Steps:\n';
-        alertMessage += '1. Go to your Vercel dashboard and check the "Logs" for your deployment. Look for a "TASK_TIMED_OUT" error.\n';
-        alertMessage += '2. Open the Developer Console (F12) and check the "Network" tab for more details on the failed request.\n';
-    }
-    alert(alertMessage);
-}
 
 async function urlToBase64(url) {
   try {
@@ -70,8 +81,7 @@ async function urlToBase64(url) {
     const response = await fetch(proxyUrl);
     if (!response.ok) {
       const errorData = await response.json().catch(() => null);
-      const detail = errorData?.detail || `Proxy server returned status: ${response.status}`;
-      throw new Error(detail);
+      throw new Error(errorData?.detail || `Proxy server returned status: ${response.status}`);
     }
     const blob = await response.blob();
     return new Promise((resolve, reject) => {
@@ -82,7 +92,7 @@ async function urlToBase64(url) {
     });
   } catch (error) {
       console.error("URL to Base64 conversion failed:", error);
-      handleFetchError(error, "loading the image from the URL");
+      alert(`Failed to load image from URL. Reason: ${error.message}`);
       return null;
   }
 }
@@ -102,6 +112,7 @@ function setupImageInputs() {
     const fileInput = container.querySelector('.file-input');
     const urlInput = container.querySelector('.url-input');
     const preview = container.querySelector('.image-preview');
+    
     fileInput.addEventListener('change', async (event) => {
       const file = event.target.files[0];
       if (file) {
@@ -109,20 +120,22 @@ function setupImageInputs() {
         preview.innerHTML = `<img src="${URL.createObjectURL(file)}" alt="Preview">`;
       }
     });
+
     urlInput.addEventListener('blur', async () => {
       const url = urlInput.value.trim();
       if (url) {
-        preview.innerHTML = `<span>Loading from URL...</span>`;
+        preview.innerHTML = `<span>Loading...</span>`;
         const base64 = await urlToBase64(url);
         if (base64) {
           imageData[inputId] = base64;
           preview.innerHTML = `<img src="${url}" alt="Preview">`;
         } else {
-          preview.innerHTML = `<span>Failed to load. Check console for errors.</span>`;
+          preview.innerHTML = `<span>Failed to load. Is it a direct link?</span>`;
           imageData[inputId] = null;
         }
       }
     });
+
     container.querySelectorAll('.tab').forEach(tab => {
       tab.addEventListener('click', () => {
         container.querySelector('.tab.active').classList.remove('active');
@@ -140,14 +153,19 @@ function toggleLoading(isLoading) {
   const btnText = document.getElementById('btn-text');
   const btnSpinner = document.getElementById('btn-spinner');
   const resultLoader = document.getElementById('resultLoader');
+  const downloadBtn = document.getElementById('downloadBtn');
+
   if (isLoading) {
     submitBtn.disabled = true;
-    btnText.textContent = 'Generating...';
+    btnText.innerHTML = 'Generating...';
     btnSpinner.style.display = 'block';
     resultLoader.style.display = 'flex';
+    // Hide and disable download button during generation
+    downloadBtn.style.display = 'none';
+    downloadBtn.disabled = true;
   } else {
     submitBtn.disabled = false;
-    btnText.textContent = 'Generate Try-On';
+    btnText.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Generate Try-On';
     btnSpinner.style.display = 'none';
     resultLoader.style.display = 'none';
   }
