@@ -24,7 +24,8 @@ async function submitTryOn() {
     });
 
     if (!res.ok) {
-        const errorData = await res.json();
+        // Try to parse the error response from the server for more detail
+        const errorData = await res.json().catch(() => ({ detail: "An unknown server error occurred." }));
         throw new Error(errorData.detail || `Server error: ${res.status}`);
     }
 
@@ -33,12 +34,12 @@ async function submitTryOn() {
       const imageUrl = URL.createObjectURL(imageBlob);
       document.getElementById("resultImage").src = imageUrl;
     } else {
-      throw new Error("API did not return an image.");
+      throw new Error("API did not return a valid image.");
     }
 
   } catch (error) {
     console.error("Error during generation:", error);
-    alert(`Error: ${error.message}`);
+    handleFetchError(error, "generating the image");
   } finally {
     toggleLoading(false);
   }
@@ -49,13 +50,15 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // --- Helper Functions ---
+
 async function urlToBase64(url) {
   try {
     const proxyUrl = `${API_BASE_URL}/proxy-image?url=${encodeURIComponent(url)}`;
     const response = await fetch(proxyUrl);
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.detail || `Failed via proxy: ${response.statusText}`);
+      const errorData = await response.json().catch(() => null);
+      const detail = errorData?.detail || `Proxy server returned status: ${response.status}`;
+      throw new Error(detail);
     }
     const blob = await response.blob();
     return new Promise((resolve, reject) => {
@@ -66,9 +69,21 @@ async function urlToBase64(url) {
     });
   } catch (error) {
       console.error("URL to Base64 conversion failed:", error);
-      alert(`Failed to load image from URL. Reason: ${error.message}`);
+      handleFetchError(error, "loading the image from the URL");
       return null;
   }
+}
+
+function handleFetchError(error, action) {
+    let alertMessage = `An error occurred while ${action}.\n\nReason: ${error.message}\n\n`;
+    if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+        alertMessage += 'This is often a CORS issue or a network problem.\n\n';
+        alertMessage += 'Debugging Steps:\n';
+        alertMessage += '1. Open the Developer Console (F12) and check the "Console" and "Network" tabs for specific errors.\n';
+        alertMessage += '2. Check your Vercel deployment logs for server-side errors or timeouts.\n';
+        alertMessage += '3. Ensure the backend is running and accessible at the specified URL.';
+    }
+    alert(alertMessage);
 }
 
 function fileToBase64(file) {
@@ -102,7 +117,7 @@ function setupImageInputs() {
           imageData[inputId] = base64;
           preview.innerHTML = `<img src="${url}" alt="Preview">`;
         } else {
-          preview.innerHTML = `<span>Failed to load. Is it a direct link to a JPG/PNG?</span>`;
+          preview.innerHTML = `<span>Failed to load. Please check the URL and console for errors.</span>`;
           imageData[inputId] = null;
         }
       }
