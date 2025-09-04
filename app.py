@@ -175,7 +175,7 @@ async def generate_tryon(payload: TryOnPayload):
 
             # image_url = f"http://127.0.0.1:8000/images/{filename}"
             # return {"imageUrl": image_url}
-            return generated_image_data
+            return Response(content=generated_image_data, media_type="image/png")
         else:
             block_reason = response.prompt_feedback.block_reason if response.prompt_feedback else "Unknown"
             raise HTTPException(status_code=500, detail=f"Image generation failed. Reason: {block_reason}")
