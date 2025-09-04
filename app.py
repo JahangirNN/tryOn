@@ -87,16 +87,16 @@ async def proxy_image(url: str):
         except httpx.RequestError as e:
             raise HTTPException(status_code=400, detail=f"Failed to fetch image: {e}")
 
-@app.get("/gallery", response_model=List[str])
-async def get_gallery():
-    # This function is unchanged.
-    try:
-        files = [f for f in os.listdir(IMAGE_DIR) if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
-        files.sort(key=lambda x: os.path.getmtime(os.path.join(IMAGE_DIR, x)), reverse=True)
-        base_url = "http://127.0.0.1:8000/images"
-        return [f"{base_url}/{f}" for f in files]
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Could not retrieve gallery: {e}")
+# @app.get("/gallery", response_model=List[str])
+# async def get_gallery():
+#     # This function is unchanged.
+#     try:
+#         files = [f for f in os.listdir(IMAGE_DIR) if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
+#         files.sort(key=lambda x: os.path.getmtime(os.path.join(IMAGE_DIR, x)), reverse=True)
+#         base_url = "http://127.0.0.1:8000/images"
+#         return [f"{base_url}/{f}" for f in files]
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=f"Could not retrieve gallery: {e}")
 
 @app.post("/generate", response_model=TryOnResponse)
 async def generate_tryon(payload: TryOnPayload):
