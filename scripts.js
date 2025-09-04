@@ -1,18 +1,30 @@
 const imageData = { person: null, product: null };
-// Ensure this URL is correct and the deployment is active
+// Ensure this URL is correct and points to your Render deployment
 const API_BASE_URL = "https://tryon-3zcg.onrender.com";
 
+/**
+ * Main function to submit the try-on request to the backend.
+ */
 async function submitTryOn() {
   if (!imageData.person || !imageData.product) {
     alert("Please provide both a person and a product image!");
     return;
   }
+  
+  // Kept your original payload structure to match your backend
   const payload = {
     personImage: imageData.person,
     productImage: imageData.product,
     productName: document.getElementById("productName").value,
     productDesc: document.getElementById("productDesc").value,
+    // NOTE: The new HTML doesn't have inputs for size, tone, or style.
+    // You would need to add them back to the HTML if you want to use them.
+    // For now, they will send empty values.
+    productSize: document.getElementById("productSize")?.value || "",
+    tone: document.getElementById("tone")?.value || "",
+    style: document.getElementById("style")?.value || ""
   };
+
   toggleLoading(true);
   try {
     const res = await fetch(`${API_BASE_URL}/generate`, {
@@ -30,7 +42,8 @@ async function submitTryOn() {
     if (imageBlob.size > 0) {
       const imageUrl = URL.createObjectURL(imageBlob);
       document.getElementById("resultImage").src = imageUrl;
-      // Show and enable the download button on success
+
+      // **NEW ADDITION**: Show the download button on success
       const downloadBtn = document.getElementById('downloadBtn');
       downloadBtn.style.display = 'flex';
       downloadBtn.disabled = false;
@@ -40,40 +53,42 @@ async function submitTryOn() {
 
   } catch (error) {
     console.error("Error during generation:", error);
-    alert(`Error: ${error.message}`);
+    // Using a simple alert, but you can restore your handleFetchError logic if you prefer
+    alert(`An error occurred while generating the image.\n\nReason: ${error.message}`);
   } finally {
     toggleLoading(false);
   }
 }
 
+/**
+ * NEW FUNCTION: Sets up the event listener for the download button.
+ */
 function setupDownloadButton() {
     const downloadBtn = document.getElementById('downloadBtn');
     const resultImage = document.getElementById('resultImage');
 
     downloadBtn.addEventListener('click', () => {
-        // The src is a blob URL, which is perfect for downloading
         const imageUrl = resultImage.src;
         if (!imageUrl || imageUrl.startsWith('https://via.placeholder.com')) {
             alert("No image to download yet!");
             return;
         }
-
+        // Create a temporary link to trigger the download
         const link = document.createElement('a');
         link.href = imageUrl;
-        link.download = 'virtual-try-on-result.png'; // Sets the filename for the download
+        link.download = 'virtual-try-on-result.png';
         document.body.appendChild(link);
         link.click();
-        document.body.removeChild(link); // Clean up the temporary link
+        document.body.removeChild(link);
     });
 }
 
+// --- Lifecycle and Helper Functions (Largely Unchanged) ---
 
 document.addEventListener('DOMContentLoaded', () => {
   setupImageInputs();
-  setupDownloadButton(); // Initialize the download button listener
+  setupDownloadButton(); // **NEW ADDITION**: Initialize the new button
 });
-
-// --- Helper Functions ---
 
 async function urlToBase64(url) {
   try {
@@ -148,6 +163,9 @@ function setupImageInputs() {
   });
 }
 
+/**
+ * MODIFIED FUNCTION: Manages the loading state for the new UI elements.
+ */
 function toggleLoading(isLoading) {
   const submitBtn = document.getElementById('submitBtn');
   const btnText = document.getElementById('btn-text');
@@ -157,7 +175,7 @@ function toggleLoading(isLoading) {
 
   if (isLoading) {
     submitBtn.disabled = true;
-    btnText.innerHTML = 'Generating...';
+    btnText.textContent = 'Generating...'; // Set simple text during loading
     btnSpinner.style.display = 'block';
     resultLoader.style.display = 'flex';
     // Hide and disable download button during generation
@@ -165,6 +183,7 @@ function toggleLoading(isLoading) {
     downloadBtn.disabled = true;
   } else {
     submitBtn.disabled = false;
+    // Restore text with icon
     btnText.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Generate Try-On';
     btnSpinner.style.display = 'none';
     resultLoader.style.display = 'none';
