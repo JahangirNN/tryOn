@@ -22,7 +22,7 @@ import re
 
 # ✅ Load .env variables
 load_dotenv()
-api_key = os.getenv("GEMINI_API_KEY_FREE")
+api_key = os.getenv("GEMINI_API_KEY")
 
 if not api_key:
     raise RuntimeError("GEMINI_API_KEY not set in .env file")
