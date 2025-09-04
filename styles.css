@@ -1,0 +1,188 @@
+:root {
+    --primary-color: #007bff;
+    --light-gray: #f0f2f5;
+    --medium-gray: #ccc;
+    --dark-gray: #555;
+    --bg-color: #fff;
+    --card-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    margin: 0;
+    background-color: var(--light-gray);
+    color: var(--dark-gray);
+    display: flex;
+    justify-content: center;
+    padding: 20px;
+  }
+  .main-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    width: 100%;
+    max-width: 1400px;
+  }
+  .panel {
+    background: var(--bg-color);
+    border-radius: 8px;
+    box-shadow: var(--card-shadow);
+    padding: 25px;
+    flex: 1;
+  }
+  .controls-panel {
+    min-width: 350px;
+    flex-basis: 400px;
+  }
+  .results-panel {
+    min-width: 400px;
+    flex-basis: 500px;
+  }
+  h1, h2 {
+    color: #333;
+  }
+  h1 {
+    text-align: center;
+    margin-bottom: 25px;
+  }
+  h2 {
+    border-bottom: 1px solid var(--light-gray);
+    padding-bottom: 10px;
+    margin-top: 20px;
+  }
+  .input-group {
+    margin-bottom: 15px;
+  }
+  label {
+    font-weight: 600;
+    display: block;
+    margin-bottom: 5px;
+  }
+  input[type="text"], textarea, select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid var(--medium-gray);
+    border-radius: 4px;
+    box-sizing: border-box;
+  }
+  textarea {
+    resize: vertical;
+    min-height: 80px;
+  }
+  button#submitBtn {
+    width: 100%;
+    padding: 12px;
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
+  button#submitBtn:hover {
+    background-color: #0056b3;
+  }
+  button#submitBtn:disabled {
+    background-color: #a0a0a0;
+    cursor: not-allowed;
+  }
+  .image-input .tabs {
+    display: flex;
+    border-bottom: 1px solid var(--medium-gray);
+    margin-bottom: 10px;
+  }
+  .image-input .tab {
+    padding: 10px 15px;
+    cursor: pointer;
+    border: 1px solid transparent;
+    border-bottom: none;
+    margin-bottom: -1px;
+  }
+  .image-input .tab.active {
+    border-color: var(--medium-gray);
+    border-bottom-color: var(--bg-color);
+    border-radius: 4px 4px 0 0;
+    font-weight: 600;
+  }
+  .image-input .tab-content {
+    display: none;
+  }
+  .image-input .tab-content.active {
+    display: block;
+  }
+  .image-preview {
+    width: 100%;
+    min-height: 150px;
+    border: 2px dashed var(--medium-gray);
+    border-radius: 4px;
+    margin-top: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--medium-gray);
+    overflow: hidden;
+  }
+  .image-preview img {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+  #result-wrapper {
+    position: relative;
+  }
+  #resultImage {
+    width: 100%;
+    border-radius: 4px;
+    border: 1px solid var(--medium-gray);
+  }
+  .loader {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.8);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 10px;
+    border-radius: 4px;
+  }
+  .spinner {
+    border: 5px solid var(--light-gray);
+    border-top: 5px solid var(--primary-color);
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    animation: spin 1s linear infinite;
+  }
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  #gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 10px;
+    max-height: 400px;
+    overflow-y: auto;
+    padding-top: 5px;
+  }
+  #gallery img {
+    width: 100%;
+    height: 100px;
+    object-fit: cover;
+    border-radius: 4px;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: border-color 0.2s;
+  }
+  #gallery img:hover, #gallery img.selected {
+    border-color: var(--primary-color);
+  }

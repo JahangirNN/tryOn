@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Virtual Try-On (Robust URL Loading)</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div class="main-container">
+    <div class="panel controls-panel">
+      <h1>AI Virtual Try-On</h1>
+      <div class="input-group image-input" data-input-id="person">
+        <label>1. Person Image</label>
+        <div class="tabs">
+          <div class="tab active" data-tab="file">Upload</div>
+          <div class="tab" data-tab="url">URL</div>
+        </div>
+        <div class="tab-content active" data-tab-content="file">
+          <input type="file" class="file-input" accept="image/*">
+        </div>
+        <div class="tab-content" data-tab-content="url">
+          <input type="text" class="url-input" placeholder="Paste DIRECT image URL (ends in .jpg, .png)">
+        </div>
+        <div class="image-preview"><span>Preview</span></div>
+      </div>
+      <div class="input-group image-input" data-input-id="product">
+        <label>2. Product Image</label>
+        <div class="tabs">
+          <div class="tab active" data-tab="file">Upload</div>
+          <div class="tab" data-tab="url">URL</div>
+        </div>
+        <div class="tab-content active" data-tab-content="file">
+          <input type="file" class="file-input" accept="image/*">
+        </div>
+        <div class="tab-content" data-tab-content="url">
+          <input type="text" class="url-input" placeholder="Paste DIRECT image URL (ends in .jpg, .png)">
+        </div>
+        <div class="image-preview"><span>Preview</span></div>
+      </div>
+      <div class="input-group">
+        <label>3. Product Details</label>
+        <input type="text" id="productName" placeholder="e.g., Men's Graphic T-Shirt">
+        <input type="text" id="productSize" placeholder="e.g., Medium">
+        <textarea id="productDesc" placeholder="e.g., 100% cotton, black with a white logo on the front."></textarea>
+      </div>
+      <div class="input-group">
+        <label>4. Style Options (Optional)</label>
+        <select id="tone">
+          <option value="">-- Select Tone --</option>
+          <option value="casual">Casual</option>
+          <option value="sporty">Sporty</option>
+          <option value="elegant">Elegant</option>
+        </select>
+        <select id="style" style="margin-top: 8px;">
+          <option value="">-- Select Style --</option>
+          <option value="photorealistic">Photorealistic</option>
+          <option value="fashion catalog">Fashion Catalog</option>
+          <option value="cinematic">Cinematic</option>
+        </select>
+      </div>
+      <button id="submitBtn" onclick="submitTryOn()">
+        <span id="btn-text">Generate Try-On</span>
+        <div id="btn-spinner" class="spinner" style="display: none; width: 20px; height: 20px;"></div>
+      </button>
+    </div>
+    <div class="panel results-panel">
+      <h2>Result</h2>
+      <div id="result-wrapper">
+        <img id="resultImage" src="https://via.placeholder.com/512x512.png?text=Your+Result+Will+Appear+Here" alt="Result will appear here">
+        <div class="loader" id="resultLoader">
+          <div class="spinner"></div>
+          <p>Generating your image...</p>
+        </div>
+      </div>
+      <h2>Gallery</h2>
+      <p style="font-size: 14px; color: #777;">Generated images are saved on the server. Click one to use it as the "Person Image".</p>
+      <div id="gallery"></div>
+    </div>
+  </div>
+
+  <script src="scripts.js"></script>
+</body>
+</html>
