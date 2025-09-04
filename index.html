@@ -56,8 +56,28 @@
         <h2><i class="fa-solid fa-pen-to-square"></i> 3. Details</h2>
         <div class="input-group">
           <input type="text" id="productName" placeholder="Product Name (e.g., Graphic T-Shirt)">
+          <input type="text" id="productSize" placeholder="Product Size (e.g., Medium)">
           <textarea id="productDesc" placeholder="Description (e.g., 100% cotton, black with a logo)"></textarea>
         </div>
+      </div>
+      
+      <!-- ADDED BACK: Optional style fields to match your backend -->
+      <div class="control-section">
+          <h2><i class="fa-solid fa-palette"></i> 4. Style (Optional)</h2>
+          <div class="input-group">
+              <select id="tone">
+                <option value="">-- Select Tone --</option>
+                <option value="casual">Casual</option>
+                <option value="sporty">Sporty</option>
+                <option value="elegant">Elegant</option>
+              </select>
+              <select id="style">
+                <option value="">-- Select Style --</option>
+                <option value="photorealistic">Photorealistic</option>
+                <option value="fashion catalog">Fashion Catalog</option>
+                <option value="cinematic">Cinematic</option>
+              </select>
+          </div>
       </div>
       
       <button id="submitBtn">

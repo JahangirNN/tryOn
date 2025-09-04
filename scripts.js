@@ -2,27 +2,21 @@ const imageData = { person: null, product: null };
 // Ensure this URL is correct and points to your Render deployment
 const API_BASE_URL = "https://tryon-3zcg.onrender.com";
 
-/**
- * Main function to submit the try-on request to the backend.
- */
 async function submitTryOn() {
   if (!imageData.person || !imageData.product) {
     alert("Please provide both a person and a product image!");
     return;
   }
   
-  // Kept your original payload structure to match your backend
+  // CORRECTED PAYLOAD: Now collects all fields from the updated HTML
   const payload = {
     personImage: imageData.person,
     productImage: imageData.product,
     productName: document.getElementById("productName").value,
+    productSize: document.getElementById("productSize").value,
     productDesc: document.getElementById("productDesc").value,
-    // NOTE: The new HTML doesn't have inputs for size, tone, or style.
-    // You would need to add them back to the HTML if you want to use them.
-    // For now, they will send empty values.
-    productSize: document.getElementById("productSize")?.value || "",
-    tone: document.getElementById("tone")?.value || "",
-    style: document.getElementById("style")?.value || ""
+    tone: document.getElementById("tone").value,
+    style: document.getElementById("style").value
   };
 
   toggleLoading(true);
@@ -43,7 +37,7 @@ async function submitTryOn() {
       const imageUrl = URL.createObjectURL(imageBlob);
       document.getElementById("resultImage").src = imageUrl;
 
-      // **NEW ADDITION**: Show the download button on success
+      // Show and enable the download button on success
       const downloadBtn = document.getElementById('downloadBtn');
       downloadBtn.style.display = 'flex';
       downloadBtn.disabled = false;
@@ -53,16 +47,12 @@ async function submitTryOn() {
 
   } catch (error) {
     console.error("Error during generation:", error);
-    // Using a simple alert, but you can restore your handleFetchError logic if you prefer
     alert(`An error occurred while generating the image.\n\nReason: ${error.message}`);
   } finally {
     toggleLoading(false);
   }
 }
 
-/**
- * NEW FUNCTION: Sets up the event listener for the download button.
- */
 function setupDownloadButton() {
     const downloadBtn = document.getElementById('downloadBtn');
     const resultImage = document.getElementById('resultImage');
@@ -73,7 +63,6 @@ function setupDownloadButton() {
             alert("No image to download yet!");
             return;
         }
-        // Create a temporary link to trigger the download
         const link = document.createElement('a');
         link.href = imageUrl;
         link.download = 'virtual-try-on-result.png';
@@ -83,12 +72,12 @@ function setupDownloadButton() {
     });
 }
 
-// --- Lifecycle and Helper Functions (Largely Unchanged) ---
-
 document.addEventListener('DOMContentLoaded', () => {
   setupImageInputs();
-  setupDownloadButton(); // **NEW ADDITION**: Initialize the new button
+  setupDownloadButton();
 });
+
+// --- Helper Functions ---
 
 async function urlToBase64(url) {
   try {
@@ -163,9 +152,6 @@ function setupImageInputs() {
   });
 }
 
-/**
- * MODIFIED FUNCTION: Manages the loading state for the new UI elements.
- */
 function toggleLoading(isLoading) {
   const submitBtn = document.getElementById('submitBtn');
   const btnText = document.getElementById('btn-text');
@@ -175,15 +161,13 @@ function toggleLoading(isLoading) {
 
   if (isLoading) {
     submitBtn.disabled = true;
-    btnText.textContent = 'Generating...'; // Set simple text during loading
+    btnText.textContent = 'Generating...';
     btnSpinner.style.display = 'block';
     resultLoader.style.display = 'flex';
-    // Hide and disable download button during generation
     downloadBtn.style.display = 'none';
     downloadBtn.disabled = true;
   } else {
     submitBtn.disabled = false;
-    // Restore text with icon
     btnText.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Generate Try-On';
     btnSpinner.style.display = 'none';
     resultLoader.style.display = 'none';
