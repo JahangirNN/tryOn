@@ -4,9 +4,78 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AI Virtual Try-On Studio</title>
-  <!-- Link to Font Awesome for Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <link rel="stylesheet" href="styles.css">
+  <!-- ✅ Add some basic styles for the new elements -->
+  <style>
+    .multi-image-preview-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding-top: 10px;
+      min-height: 70px; /* Ensure space is reserved */
+    }
+    .thumbnail {
+      position: relative;
+      width: 70px;
+      height: 70px;
+    }
+    .thumbnail img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 4px;
+      border: 1px solid #ddd;
+    }
+    .remove-btn {
+      position: absolute;
+      top: -5px;
+      right: -5px;
+      background-color: #ff4d4d;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      font-size: 12px;
+      line-height: 20px;
+      text-align: center;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    .mode-selector {
+      margin-bottom: 20px;
+    }
+    .mode-selector h2 {
+      margin-bottom: 10px;
+    }
+    .mode-selector .tabs {
+      display: flex;
+      justify-content: stretch;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .mode-selector .tab {
+      flex-grow: 1;
+      text-align: center;
+      padding: 10px;
+      background-color: #f0f0f0;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    .mode-selector .tab:not(:last-child) {
+      border-right: 1px solid #ccc;
+    }
+    .mode-selector .tab.active {
+      background-color: #007bff;
+      color: white;
+      font-weight: bold;
+    }
+    #product-url-input::placeholder {
+      font-size: 12px;
+    }
+  </style>
 </head>
 <body>
 
@@ -35,20 +104,25 @@
         </div>
       </div>
 
+      <!-- ✅ MODIFIED: Product Image Section for Multi-Upload -->
       <div class="control-section">
-        <h2><i class="fa-solid fa-shirt"></i> 2. Product Image</h2>
+        <h2><i class="fa-solid fa-shirt"></i> 2. Product Image(s)</h2>
         <div class="image-input" data-input-id="product">
           <div class="tabs">
             <div class="tab active" data-tab="file">Upload</div>
             <div class="tab" data-tab="url">URL</div>
           </div>
           <div class="tab-content active" data-tab-content="file">
-            <input type="file" class="file-input" accept="image/*">
+            <!-- Add 'multiple' attribute to allow selecting multiple files -->
+            <input type="file" class="file-input" accept="image/*" multiple>
           </div>
           <div class="tab-content" data-tab-content="url">
-            <input type="text" class="url-input" placeholder="Paste direct image URL (.jpg, .png)">
+            <input type="text" class="url-input" id="product-url-input" placeholder="Paste URL and press Enter to add image">
           </div>
-          <div class="image-preview"><span>Preview</span></div>
+          <!-- New container for multiple thumbnails -->
+          <div class="multi-image-preview-container" id="product-preview-container">
+              <span>Previews of product angles will appear here</span>
+          </div>
         </div>
       </div>
 
@@ -61,7 +135,6 @@
         </div>
       </div>
       
-      <!-- ADDED BACK: Optional style fields to match your backend -->
       <div class="control-section">
           <h2><i class="fa-solid fa-palette"></i> 4. Style (Optional)</h2>
           <div class="input-group">
@@ -77,6 +150,15 @@
                 <option value="fashion catalog">Fashion Catalog</option>
                 <option value="cinematic">Cinematic</option>
               </select>
+          </div>
+      </div>
+
+      <!-- ✅ ADDED: API Mode Selector -->
+      <div class="control-section mode-selector">
+          <h2><i class="fa-solid fa-cogs"></i> 5. Generation Mode</h2>
+          <div class="tabs">
+              <div class="tab active" data-mode="single">Single Image (Standard)</div>
+              <div class="tab" data-mode="multi">Multi-Angle (Advanced)</div>
           </div>
       </div>
       

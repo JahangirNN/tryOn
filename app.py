@@ -126,8 +126,8 @@ async def generate_tryon(payload: TryOnPayload):
   
   
             # meta_prompt = meta_prompt_1_production_ready
-            meta_prompt = meta_prompt_test_for_better
-
+            meta_prompt = meta_prompt_test_for_better(payload.productDesc)
+            print(payload.productDesc, "\n")
 
 
             # Call the description model to generate the entire new prompt.
@@ -185,7 +185,125 @@ async def generate_tryon(payload: TryOnPayload):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"An internal server error occurred: {str(e)}")
     
-    # --- 6. Run the Application (Unchanged) ---
+ 
+class TryOnPayloadWithMultipleImages(BaseModel):
+    personImage: str = Field(..., description="A single Base64 encoded string of the person's image.")
+    productImages: List[str] = Field(..., description="A list of Base64 encoded strings for the product, showing different angles (e.g., front, back, detail).")
+    productName: str
+    productSize: str
+    productDesc: str
+    tone: Optional[str] = None
+    style: Optional[str] = None
+
+# This is the new "Master Blaster" meta-prompt, upgraded for multi-image analysis.
+meta_prompt_multi_image = f"""
+**ROLE:** You are an AI Render Supervisor & 3D Garment Specialist. Your function is to generate a "Shot Execution Brief"—a master-level, technically flawless render instruction set for a subsequent, diffusion-based image synthesis engine. You do not create the final image; you write the unimpeachable technical blueprint that guarantees its perfection.
+
+**YOUR PRIMARY DIRECTIVE:**
+Your output must be a self-contained, technically exhaustive brief. It MUST guide the image synthesis engine to perform a perfect, photorealistic clothing replacement on a digital avatar, while preserving the avatar's core identity (face, hair, hands) and the original scene with absolute fidelity. The product's appearance must be a perfect reconstruction based on the multiple angles provided.
+
+**THE INTELLECTUAL PROCESS:**
+1.  **DECONSTRUCT THE SCENE & AVATAR:** Analyze the first image (the avatar). Reverse-engineer the environment's lighting setup (key, fill, rim lights). Define the "identity preservation mask" (head, hair, neck, and hands). Analyze the avatar's pose to understand the underlying skeletal mechanics.
+2.  **SYNTHESIZE THE PRODUCT (MULTI-IMAGE ANALYSIS):** Analyze the **collection** of subsequent images (the product). These images show the same garment from different angles. Your task is to mentally reconstruct the full 3D garment. Identify the front view, the back view, and any close-up detail shots of textures, seams, or hardware (buttons, zippers).
+3.  **DECONSTRUCT THE PRODUCT's PHYSICAL PROPERTIES:** From the detail shots, analyze the product as a set of PBR (Physically-Based Rendering) materials. Determine its diffuse albedo, specular reflectivity, microsurface roughness, and any translucency or metallic properties.
+4.  **FORMULATE A 360° SIMULATION STRATEGY:** Formulate a highly detailed, pose-aware strategy. Your instructions must account for both the visible front of the garment and the unseen back, based on your multi-image analysis.
+5.  **CONSTRUCT THE SHOT EXECUTION BRIEF:** Write the complete brief, adhering to the meticulous structure and unparalleled quality of the gold-standard examples below.
+
+---
+**GOLD-STANDARD BRIEF TEMPLATE & EXAMPLES (Your output must replicate this structure and depth):**
+
+**EXAMPLE 1: Multi-Angle Jacket**
+(AVATAR: a man leaning on a wall. PRODUCT IMAGES: front of a leather jacket, back of the same jacket, close-up of the zipper)
+RENDER INTENT
+A high-fidelity, photorealistic layering of the provided black leather jacket over the avatar's existing t-shirt, synthesized from multiple product views.
+INPAINTING & MASKING DIRECTIVE (IDENTITY PRESERVATION)
+The head, neck, and hands of the avatar in the original image are a protected alpha channel mask. This region is a "no-render zone." The synthesis engine MUST perform a 1:1 pixel-perfect preservation of these areas.
+MULTI-IMAGE MATERIAL & TEXTURE SYNTHESIS (PRODUCT CONSISTENCY)
+Synthesize a complete material profile by analyzing all product images:
+LEATHER JACKET (PBR):
+Albedo: Sample the deep black color from the front view.
+Specular: Sample the high, semi-gloss reflectivity from the detail shot.
+Roughness: Sample the low-to-medium microsurface texture from the detail shot.
+Hardware: The zipper is metallic with high specularity, as seen in the close-up.
+BACK VIEW ANALYSIS: The back view confirms a central seam and two side panels. This structure must be rendered correctly.
+POSE-AWARE FABRIC SIMULATION (360° AWARENESS)
+ACTION: Layer the black leather jacket over the avatar's t-shirt, worn open.
+PHYSICS: The avatar is leaning back, causing the jacket's rear panel (as seen in the back view) to compress against the wall, creating heavy folds. The right arm is bent, causing the leather sleeve to bunch up. Gravity must pull the open lapels downward.
+LIGHTING & COMPOSITING INSTRUCTIONS
+KEY LIGHT: Match the hard, cool-white key light from the top-left on the jacket's shoulder and sleeve.
+CONTACT SHADOWS: Render high-quality, soft contact shadows where the jacket collar meets the t-shirt and where the back of the jacket presses against the brick wall.
+---
+
+**YOUR TASK NOW:**
+Analyze the provided avatar image and the **collection** of product images. Generate a new, master-level Shot Execution Brief that follows the exact structure, technical language, and extraordinary level of detail demonstrated in the example. Your output must begin with `## RENDER INTENT`.
+"""
+
+@app.post("/generate_multi_image", response_class=Response, responses={200: {"content": {"image/png": {}}}})
+async def generate_tryon_multi_image(payload: TryOnPayloadWithMultipleImages):
+    try:
+        # Decode the avatar image
+        person_image = Image.open(BytesIO(base64.b64decode(payload.personImage)))
+
+        # Decode the list of product images
+        product_image_objects = [Image.open(BytesIO(base64.b64decode(img))) for img in payload.productImages]
+
+        ai_generated_dynamic_prompt = ""
+        try:
+            # The contents for the first AI call now include the avatar image
+            # followed by the list of product images
+            description_model_contents = [meta_prompt_multi_image, person_image] + product_image_objects
+            
+            description_response = description_model.generate_content(
+                description_model_contents,
+                generation_config={"temperature": 0.5}
+            )
+            ai_generated_dynamic_prompt = description_response.text.strip()
+            print("\n--- AI as Master Prompt Engineer Generated the Following (Multi-Image) ---")
+            print(ai_generated_dynamic_prompt)
+            print("-----------------------------------------------------------\n")
+            
+        except Exception as e:
+            print(f"WARNING: Dynamic prompt generation failed. Using basic fallback. Error: {e}")
+            ai_generated_dynamic_prompt = "## GOAL\nCreate an image of the avatar wearing the new clothing. Preserve the avatar's identity and the background."
+
+        # The wrapper prompt remains the same simple executor.
+        image_gen_prompt = f"""
+        You are a high-fidelity image synthesis engine. Your task is to execute the following technical instructions from an AI Specialist. Adhere to every rule with absolute precision.
+
+        {ai_generated_dynamic_prompt}
+        """
+
+        # The contents for the final image generation call also include all images
+        final_gen_contents = [image_gen_prompt, person_image] + product_image_objects
+        
+        generation_config = {
+            "temperature": 0.1,
+            "candidate_count": 1
+        }
+        
+        response = image_generation_model.generate_content(
+            final_gen_contents,
+            generation_config=generation_config
+        )
+        
+        generated_image_data = None
+        for part in response.candidates[0].content.parts:
+            if part.inline_data:
+                generated_image_data = part.inline_data.data
+                break
+                
+        if generated_image_data:
+            return Response(content=generated_image_data, media_type="image/png")
+        else:
+            block_reason = response.prompt_feedback.block_reason if response.prompt_feedback else "Unknown"
+            raise HTTPException(status_code=500, detail=f"Image generation failed. Reason: {block_reason}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"An internal server error occurred: {str(e)}")
+
+
+
+
+   # --- 6. Run the Application (Unchanged) ---
 # if __name__ == "__main__":
 #     uvicorn.run(app, host="127.0.0.1", port=8000)
 
@@ -194,7 +312,8 @@ async def generate_tryon(payload: TryOnPayload):
 # designed to elevate the AI to a VFX Supervisor and Technical Director.
 
 
-meta_prompt_1_production_ready = f"""
+def meta_prompt_1_production_ready(description):
+    return f"""
             # This is the new, "extraordinary" meta-prompt. 
             # It functions as a masterclass for the AI, teaching it to be a true Creative Director.
 
@@ -219,6 +338,7 @@ meta_prompt_1_production_ready = f"""
 
             2. **DECONSTRUCT THE PRODUCT**  
             Analyze the product's material properties (e.g., is it diffuse like cotton, specular like leather, or translucent like organza?), its construction (seams, buttons, zippers), and its intended fit.
+            Here are some details about the Product :- `{description}`
 
             3. **SYNTHESIZE A PHOTOREALISTIC STRATEGY**  
             Based on your analysis, formulate a highly detailed, pose-aware strategy.  
@@ -325,111 +445,67 @@ meta_prompt_1_production_ready = f"""
             """
 
 
-# This is the "VFX Master" meta-prompt. It is a comprehensive training document designed to elevate the AI to a VFX Supervisor and Technical Director.
-meta_prompt_test_for_better = f"""
-**ROLE:** You are an AI Render Supervisor & VFX Technical Director. Your function is to generate a "Shot Execution Brief"—a master-level, technically flawless render instruction set for a subsequent, diffusion-based image synthesis engine. You do not create the final image; you write the unimpeachable technical blueprint that guarantees its perfection.
+# This is the "Lead Technical Artist" meta-prompt. It is a comprehensive training document designed to elevate the AI to a master of visual and data synthesis.
+def meta_prompt_test_for_better(description): 
+    return f"""
+**ROLE:** You are an AI Lead Technical Artist & VFX Supervisor. Your function is to generate a "Shot Execution Brief"—a master-level, technically flawless render instruction set for a subsequent, diffusion-based image synthesis engine. You do not create the final image; you write the unimpeachable technical blueprint that guarantees its perfection by synthesizing visual evidence with hard data.
 
 **YOUR PRIMARY DIRECTIVE:**
-Your output must be a self-contained, technically exhaustive, and artistically precise brief. This brief MUST guide the image synthesis engine to perform a perfect, photorealistic clothing replacement on a digital avatar, while preserving the avatar's core identity (face, hair, hands) and the original scene's physical properties with absolute, sub-pixel fidelity. Your brief must leave zero room for creative misinterpretation.
+Your output must be a self-contained, technically exhaustive brief. It MUST guide the image synthesis engine to perform a perfect, photorealistic clothing replacement, while preserving the avatar's core identity (face, hair, hands) and the original scene with absolute fidelity. The product's appearance and, critically, its **fit** must be a perfect reconstruction based on both the multiple angles and the provided textual data.
 
 **THE INTELLECTUAL PROCESS:**
-1.  **DECONSTRUCT THE SCENE:** Reverse-engineer the environment's lighting setup: identify the key, fill, and rim lights. Determine their color temperature, intensity, and diffusion.
-2.  **DECONSTRUCT THE AVATAR:** Analyze the avatar's pose to understand the underlying skeletal mechanics and how it will affect fabric. Critically, define the "identity preservation mask" (head, hair, neck, and hands).
-3.  **DECONSTRUCT THE PRODUCT:** Analyze the product image as a set of PBR (Physically-Based Rendering) materials. Determine its diffuse albedo (base color), specular reflectivity, microsurface roughness, and any translucency or metallic properties.
-4.  **SYNTHESIZE A PHYSICS-BASED SIMULATION STRATEGY:** Formulate a highly detailed, pose-aware strategy. This is not "draping"; this is a simulation directive that predicts the exact physical behavior of the specific fabric under the forces of gravity, tension, and compression dictated by the avatar's pose.
-5.  **CONSTRUCT THE SHOT EXECUTION BRIEF:** Write the complete brief, adhering to the meticulous structure, technical language, and unparalleled quality of the gold-standard examples below.
+1.  **DECONSTRUCT THE SCENE & AVATAR:** Analyze the avatar image. Reverse-engineer the environment's lighting setup. Define the "identity preservation mask" (head, hair, neck, and hands). Visually estimate the avatar's proportions.
+2.  **DECONSTRUCT THE PRODUCT (VISUAL & TEXTUAL SYNTHESIS):** This is your most critical task.
+    - First, analyze the **collection** of product images to understand the garment's shape, texture, and construction.
+    - Second, meticulously read the provided **textual data**. This data is the **GROUND TRUTH**.
+    - **Cross-Reference:** Use the textual data to verify and correct your visual analysis. If the text says "100% silk," you MUST model the physics of silk, even if the image lighting is ambiguous. If the text provides a size, you MUST simulate that specific fit.
+3.  **FORMULATE A 360° FIT-AWARE SIMULATION STRATEGY:** Formulate a highly detailed, pose-aware strategy that is directly informed by your synthesis of the visual evidence and the textual ground truth. Your instructions must describe the precise physical behavior of the fabric based on its stated material and specific fit.
+4.  **CONSTRUCT THE SHOT EXECUTION BRIEF:** Write the complete brief, adhering to the meticulous structure and unparalleled quality of the gold-standard examples below.
 
 ---
 **GOLD-STANDARD BRIEF TEMPLATE & EXAMPLES (Your output must replicate this structure and depth):**
 
 **EXAMPLE 1: Complex Layering with Specular Material**
-(AVATAR: a man in a t-shirt, leaning back on a brick wall. PRODUCT: a black leather jacket)
-
+(AVATAR: a man leaning on a wall. PRODUCT IMAGES: front/back/detail of a leather jacket. TEXTUAL DATA: "Description: Classic biker jacket. Material: 100% genuine calfskin leather. Fit: Regular Fit.")
 RENDER INTENT
-A high-fidelity, photorealistic layering of the provided black leather jacket over the avatar's existing white t-shirt, maintaining perfect identity and scene integrity.
-
+A high-fidelity, photorealistic layering of the provided black leather jacket, rendered with a "Regular Fit" based on textual data, maintaining perfect identity and scene integrity.
 INPAINTING & MASKING DIRECTIVE (IDENTITY PRESERVATION)
-The head, neck, and hands of the avatar in the original image are to be considered a protected alpha channel mask. This region is a "no-render zone." The synthesis engine MUST perform a 1:1 pixel-perfect preservation of these areas. Any alteration to the avatar's face, hair, or skin within this mask is an immediate failure condition.
-
-MATERIAL SAMPLING DIRECTIVE (PRODUCT CONSISTENCY)
-Directly sample the material properties from the PRODUCT_IMAGE.
-
-LEATHER JACKET (PBR):
-Albedo: Sample the deep black color.
-Specular: Sample the high, semi-gloss reflectivity.
-Roughness: Sample the low-to-medium microsurface texture that breaks up reflections.
-
-T-SHIRT (Existing):
-The underlying white t-shirt must remain visible and unchanged.
-
+The head, neck, and hands of the avatar are a protected alpha channel mask ("no-render zone"). The synthesis engine MUST perform a 1:1 pixel-perfect preservation of these areas.
+TEXTUAL DATA ANALYSIS (GROUND TRUTH)
+Product Type: Classic biker jacket.
+Material: 100% genuine calfskin leather. This confirms a high-specularity, medium-roughness material.
+Fit: Regular Fit. This dictates a standard drape, neither tight nor oversized.
 POSE-AWARE FABRIC SIMULATION
 ACTION: Layer the black leather jacket over the avatar's t-shirt, worn open.
-PHYSICS: The avatar is leaning back, causing the jacket's rear panel to compress against the brick wall, creating heavy, realistic folds. The right arm is bent, causing the leather sleeve to bunch up with high-frequency creasing behind the elbow. Gravity must pull the open lapels downward.
-
-LIGHTING & COMPOSITING INSTRUCTIONS
-KEY LIGHT: Match the hard, cool-white key light from the top-left on the jacket's shoulder and sleeve.
-CONTACT SHADOWS: Render high-quality, soft contact shadows where the jacket collar meets the t-shirt and where the back of the jacket presses against the brick wall.
-AMBIENT OCCLUSION: Generate subtle ambient occlusion in the deep folds of the sleeves and under the open lapels to add depth.
+FIT-BASED PHYSICS: Based on the "Regular Fit" directive, the jacket should sit comfortably on the avatar's shoulders. The sleeves should terminate at the wrist. There should be enough room for natural movement, creating soft, heavy folds rather than high-tension wrinkles.
+POSE-BASED PHYSICS: The avatar is leaning back, causing the jacket's rear panel to compress against the brick wall. The right arm is bent, causing the leather sleeve to bunch up with high-frequency creasing behind the elbow.
+MULTI-IMAGE MATERIAL & TEXTURE SYNTHESIS
+LEATHER JACKET (PBR):
+Albedo: Sample the deep black color from the front view.
+Specular: High, as confirmed by "genuine calfskin leather" description. Sample from detail shot.
+Roughness: Medium, characteristic of calfskin. Sample from detail shot.
+BACK VIEW ANALYSIS: The back view confirms a central seam. This structure must be rendered correctly.
 
 **EXAMPLE 2: Complex Replacement with High-Frequency Pattern**
-(AVATAR: woman standing, one hand on hip. PRODUCT: a pinstripe business suit)
-
+(AVATAR: woman with an athletic build, one hand on hip. PRODUCT IMAGES: front/back of a suit. TEXTUAL DATA: "Description: Women's Pinstripe Power Suit. Size: US 4. Fit: Slim Fit.")
 RENDER INTENT
-A high-fidelity, photorealistic replacement of the avatar's casual outfit with the provided pinstripe suit (jacket and trousers).
-
+A high-fidelity, photorealistic replacement of the avatar's casual outfit with the provided pinstripe suit, rendered with a specific "Slim Fit" based on the provided data.
 INPAINTING & MASKING DIRECTIVE (IDENTITY PRESERVATION)
-The head, neck, and hands of the avatar in the original image are to be considered a protected alpha channel mask. This region is a "no-render zone." The synthesis engine MUST perform a 1:1 pixel-perfect preservation of these areas. Any alteration to the avatar's face, hair, or skin within this mask is an immediate failure condition.
-
-MATERIAL SAMPLING DIRECTIVE (PRODUCT CONSISTENCY)
-Directly sample the material properties from the PRODUCT_IMAGE.
-
-SUIT FABRIC (PBR):
-Albedo: Sample the charcoal gray base color.
-Texture: Sample the fine, repeating white pinstripe pattern. This pattern must be rendered with perfect consistency and orientation.
-Roughness: Sample the matte, high-microsurface roughness of wool suiting fabric.
-
+The head, neck, and hands of the avatar are a protected alpha channel mask ("no-render zone"). The synthesis engine MUST perform a 1:1 pixel-perfect preservation of these areas.
+TEXTUAL DATA ANALYSIS (GROUND TRUTH)
+Product Type: Pinstripe Power Suit.
+Size: US 4.
+Fit: Slim Fit. This is a critical directive. The garment must be rendered close to the body with minimal excess fabric.
 POSE-AWARE FABRIC SIMULATION
 ACTION: Replace the avatar's current clothing with the full pinstripe suit, worn with the jacket buttoned.
-PHYSICS (Pattern Distortion): The avatar's left arm is bent with her hand on her hip. The pinstripe pattern on the jacket's left sleeve MUST realistically stretch and distort around the curve of her elbow. The pattern on the torso must follow the contours of her body.
-PHYSICS (Tension): The single button on the jacket creates a tension point, resulting in subtle diagonal stress wrinkles radiating from the button.
-
-LIGHTING & COMPOSITING INSTRUCTIONS
-KEY LIGHT: Match the soft, diffuse key light from the front-right on the suit.
-SPECULAR HITS: The pinstripe pattern, being a lighter color, should catch slightly more light than the base fabric.
-CONTACT SHADOWS: Render a sharp contact shadow under the jacket's collar.
-
-**EXAMPLE 3: Complex Replacement with Translucent Material**
-(AVATAR: woman leaning forward, hands on a car hood. PRODUCT: sheer organza saree)
-
-RENDER INTENT
-A high-fidelity, photorealistic replacement of the avatar's current outfit with the provided sheer organza saree and maroon blouse.
-
-INPAINTING & MASKING DIRECTIVE (IDENTITY PRESERVATION)
-The head, neck, and hands of the avatar in the original image are to be considered a protected alpha channel mask. This region is a "no-render zone." The synthesis engine MUST perform a 1:1 pixel-perfect preservation of these areas. Any alteration to the avatar's face, hair, or skin within this mask is an immediate failure condition.
-
-MATERIAL SAMPLING DIRECTIVE (PRODUCT CONSISTENCY)
-Directly sample the material properties from the PRODUCT_IMAGE.
-
-ORGANZA SAREE (PBR):
-Albedo: Sample the light pink base color.
-CRITICAL - TRANSLUCENCY: High. This material is sheer. The engine must enable subsurface scattering to allow light to pass through the fabric, faintly revealing the silhouette and color of the avatar's skin and the blouse beneath.
-
-GOLD EMBROIDERY (PBR):
-METALLIC: 1.0 (100% metallic).
-Roughness: Sample the low roughness to produce sharp, anisotropic specular highlights.
-
-MAROON BLOUSE (PBR):
-Albedo: Sample the deep maroon color. Opaque.
-
-POSE-AWARE FABRIC SIMULATION
-ACTION: Replace the avatar's current clothing with the maroon sleeveless blouse and the light pink organza saree.
-PHYSICS (Tension & Draping): The avatar's forward lean creates a primary tension point at the hips, stretching the saree fabric tautly across the lower back. The "pallu" must drape over the left shoulder and fall behind her, its path dictated by her lean. Gravity should create soft, voluminous, high-frequency folds in the fabric gathered at her waist.
-
-LIGHTING & COMPOSITING INSTRUCTIONS
-TRANSLUCENCY & LIGHT INTERACTION: The primary challenge is the interaction of daylight with the sheer fabric. The areas stretched over the skin should appear lighter and more transparent.
-SPECULAR HITS: The gold embroidery must catch the bright daylight and produce brilliant, sharp highlights.
-
+FIT-BASED PHYSICS: The "Slim Fit" directive dictates that the fabric should be pulled taut across the avatar's athletic frame. Render high-tension stress wrinkles radiating horizontally from the chest button.
+POSE-BASED PHYSICS (Pattern Distortion): The avatar's left arm is bent. The pinstripe pattern on the jacket's left sleeve MUST realistically stretch and distort around the curve of her elbow, following the taut fabric.
+MULTI-IMAGE MATERIAL & TEXTURE SYNTHESIS
+SUIT FABRIC (PBR):
+Texture: Sample the fine, repeating white pinstripe pattern from the product images. It must be rendered with perfect consistency and orientation, subject to the pose-based distortion.
+Roughness: Sample the matte, high-microsurface roughness of wool suiting fabric.
+---
 
 **YOUR TASK NOW:**
-Analyze the new images provided. Generate a new, master-level Shot Execution Brief that follows the exact structure, technical language, and extraordinary level of detail demonstrated in the examples above. Your output must begin with `## RENDER INTENT`.
+Analyze the provided avatar image, the **collection** of product images, and critically, the provided **textual data** `{description}`. Generate a new, master-level Shot Execution Brief that follows the exact structure, technical language, and extraordinary level of detail demonstrated in the examples above. Your output must begin with `## RENDER INTENT`.
 """
